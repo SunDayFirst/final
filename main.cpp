@@ -119,27 +119,32 @@ std::cerr << "Programm started" << std::endl;
 
     //here we will demonize ]:->
     std::cerr << "now demonize ]:->" << std::endl;
-    setsid();
-    chdir(directory);
-    close(STDIN_FILENO);
-    close(STDOUT_FILENO);
-    close(STDERR_FILENO);
-
-    //now start listenning
-    if (listen(masterSocket, SOMAXCONN) ) //returns 0 if success
+    if ( !fork() ) //if child
     {
-        perror("trouble with listenning: ");
-        return 1;
-    }
+        setsid();
+        chdir(directory);
+        close(STDIN_FILENO);
+        close(STDOUT_FILENO);
+        close(STDERR_FILENO);
 
-    while (int ss = accept(masterSocket, 0, 0))
-    {
-#pragma omp task
+        //now start listenning
+        if (listen(masterSocket, SOMAXCONN) ) //returns 0 if success
         {
-            worker(ss);
+            perror("trouble with listenning: ");
+            return 1;
         }
-    }
+
+        while (int ss = accept(masterSocket, 0, 0))
+        {
+#pragma omp task
+            {
+                worker(ss);
+            }
+        }
 #pragma omp taskwait
 
-    return 0;
+        return 0;
+    }
+    else
+        return 0;
 }
