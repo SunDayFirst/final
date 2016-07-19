@@ -118,11 +118,12 @@ std::cerr << "Programm started" << std::endl;
     bind(masterSocket, (struct sockaddr*)&sa_in, sizeof(sa_in));
 
     //here we will demonize ]:->
+    std::cerr << "now demonize ]:->" << std::endl;
     setsid();
     chdir(directory);
     close(STDIN_FILENO);
-//    close(STDOUT_FILENO);
-//    close(STDERR_FILENO);
+    close(STDOUT_FILENO);
+    close(STDERR_FILENO);
 
     //now start listenning
     if (listen(masterSocket, SOMAXCONN) ) //returns 0 if success
