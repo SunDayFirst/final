@@ -18,12 +18,12 @@ bool DoGet(int socket, std::string request)
 int fd = open(path.c_str(), O_RDONLY);
     if (-1 == fd ) //if error ENOENT
     {
-        char* responce = "HTTP/1.0 404 NOT FOUND";
+        char* responce = "HTTP/1.0 404 NOT FOUND \r\n";
         send(socket, responce, sizeof(responce), 0);
         return false;
     }
 
-    char* responce = "HTTP/1.0 200 OK \n Server: Myserver(v 1.0) Stepic/cpp \n Content-Type: text/html; charset = utf-8 \n \n";
+    char* responce = "HTTP/1.0 200 OK \r\n Server: Myserver(v 1.0) Stepic/cpp \r\n Content-Type: text/html; charset = utf-8 \r\n \r\n";
     send(socket, responce, sizeof(responce), 0);
     char readBuf[1024];
     while ( int cntRead = read(fd, readBuf, 1024))
