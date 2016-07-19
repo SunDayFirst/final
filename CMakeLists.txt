@@ -10,4 +10,4 @@ if (OPENMP_FOUND)
 endif()
 
 set(SOURCE_FILES main.cpp)
-add_executable(/home/box/final/final ${SOURCE_FILES})
+add_executable(final ${SOURCE_FILES})
