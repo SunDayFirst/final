@@ -9,28 +9,35 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <fcntl.h>
+#include <algorithm>
+
 
 bool DoGet(int socket, std::string request)
 {
-    std::string path = request.substr(3, (request.size() - request.find("HTTP") - 3));
-    std::cerr << "path document: " << path; //aux
-
-int fd = open(path.c_str(), O_RDONLY);
+    int length = request.find("HTTP") - request.find("/");
+    std::string path = request.substr(request.find("/"), length);
+    std::string fullpath = "." + path;
+//    std::cerr << "*_* path document: " << fullpath; //aux
+    fullpath.erase(std::remove(fullpath.begin(), fullpath.end(), ' '), fullpath.end());
+int fd = open(fullpath.c_str(), O_RDONLY);
     if (-1 == fd ) //if error ENOENT
     {
-        char* responce = "HTTP/1.0 404 NOT FOUND \r\n";
-        send(socket, responce, sizeof(responce), 0);
+//        std::cerr << "*_* cannot open file " <<std::endl;
+ //       perror("open file");
+        std::string responce = "HTTP/1.0 404 NOT FOUND\r\nContent-Length: 0\r\nContent-Type: text/html\r\n\r\n";
+        send(socket, responce.c_str(), responce.size(), 0);
         return false;
     }
 
-    char* responce = "HTTP/1.0 200 OK \r\n Server: Myserver(v 1.0) Stepic/cpp \r\n Content-Type: text/html; charset = utf-8 \r\n \r\n";
-    send(socket, responce, sizeof(responce), 0);
+    std::string responce = "HTTP/1.0 200 OK \r\n Server: Myserver(v 1.0) Stepic/cpp \r\n Content-Type: text/html; charset = utf-8 \r\n \r\n";
+    send(socket, responce.c_str(), responce.size(), 0);
     char readBuf[1024];
     while ( int cntRead = read(fd, readBuf, 1024))
     {
         send(socket, readBuf, cntRead, 0);
     }
-    std::cerr << "transfer complite" << std::endl; //aux
+    close(fd);
+//    std::cerr << "*_* transfer complite" << std::endl; //aux
     return true;
 }
 
@@ -47,7 +54,7 @@ bool worker(int socket)
     int cntRead = read(socket, buf, 2048);
     if (-1 == cntRead) //if error
     {
-        perror("read trouble: ");
+        perror("*_* read trouble: ");
         shutdown(socket, SHUT_RDWR);
         close(socket);
         return false;
@@ -59,7 +66,7 @@ bool worker(int socket)
         return false;
     }
     std::string requestStr(buf,(unsigned long)cntRead);
-    std::cerr << "request: " << requestStr; //aux
+//    std::cerr << "*_* request: " << requestStr; //aux
     if (checkGet(requestStr))
     {
         DoGet(socket, requestStr);
@@ -77,16 +84,15 @@ bool worker(int socket)
 
 
 int main(int argc, char** argv) {
-std::cerr << "Programm started" << std::endl;
+
 //get port, get ip from argv
-    char* port = NULL;
-    char* ip = NULL;
-    char* directory = NULL;
+    char* port = "54321";
+    char* ip = "127.0.0.1";
+    char* directory = "tmp";
 //here we use getopt
     int opchar = 0;
     while (-1 != (opchar = getopt(argc, argv, "h:p:d:")))
     {
-//	printf("opchar = %c (%d) oparg = %c \n", opchar, opchar, optarg);
         switch(opchar)
         {
             case 'h':
@@ -116,26 +122,30 @@ std::cerr << "Programm started" << std::endl;
     inet_aton(ip, &sa_in.sin_addr);
     int masterSocket = socket(AF_INET, SOCK_STREAM, 0);
     bind(masterSocket, (struct sockaddr*)&sa_in, sizeof(sa_in));
+ //   std::cerr << "my pid is " << getpid() <<std::endl;
 
     //here we will demonize ]:->
-    std::cerr << "now demonize ]:->" << std::endl;
-    if ( !fork() ) //if child
+    int a = 0;
+    if ( 0 == (a =fork()) ) //if child
     {
         setsid();
-        chdir(directory);
         close(STDIN_FILENO);
         close(STDOUT_FILENO);
         close(STDERR_FILENO);
-
+        if (chdir(directory))
+        {
+   //         std::cerr << "*_* error in chdir" << std::endl;
+        }
         //now start listenning
         if (listen(masterSocket, SOMAXCONN) ) //returns 0 if success
         {
-            perror("trouble with listenning: ");
+ //           perror("trouble with listenning: ");
             return 1;
         }
-
-        while (int ss = accept(masterSocket, 0, 0))
-        {
+        int ss = 1;
+        while ( 1 ) {
+            ss = accept(masterSocket, 0, 0);
+ //           std::cerr << "*_* accepted " << ss << std::endl;
 #pragma omp task
             {
                 worker(ss);
@@ -145,6 +155,12 @@ std::cerr << "Programm started" << std::endl;
 
         return 0;
     }
-    else
-        return 0;
+   else
+    {
+//    std::cerr << "child pid = " << a << std::endl;
+    return 0;
+    }
+    return 0;
+
 }
+// curl -I -0 -X GET "http://127.0.0.1:54321/index.html"
