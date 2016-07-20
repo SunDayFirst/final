@@ -29,7 +29,9 @@ int fd = open(fullpath.c_str(), O_RDONLY);
         return false;
     }
 
-    std::string responce = "HTTP/1.0 200 OK \r\n Server: Myserver(v 1.0) Stepic/cpp \r\n Content-Type: text/html; charset = utf-8 \r\n \r\n";
+//    std::string responce = "HTTP/1.0 200 OK \r\n Server: Myserver(v 1.0) Stepic/cpp \r\n Content-Type: text/html; charset = utf-8 \r\n \r\n";
+  
+  std::string responce = "HTTP/1.0 200 OK\r\n\r\n";
     send(socket, responce.c_str(), responce.size(), 0);
     char readBuf[1024];
     while ( int cntRead = read(fd, readBuf, 1024))
