@@ -14,8 +14,18 @@
 
 bool DoGet(int socket, std::string request)
 {
-    int length = request.find("HTTP") - request.find("/");
+    
+        int length = 0;
+    if (!request.find("?")) {
+        length = request.find("HTTP") - request.find("/");
+    }
+    else
+    {
+        length = request.find("?") - request.find("/");
+    }
     std::string path = request.substr(request.find("/"), length);
+/*    int length = request.find("HTTP") - request.find("/");
+    std::string path = request.substr(request.find("/"), length); */
     std::string fullpath = "." + path;
 //    std::cerr << "*_* path document: " << fullpath; //aux
     fullpath.erase(std::remove(fullpath.begin(), fullpath.end(), ' '), fullpath.end());
