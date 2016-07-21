@@ -10,6 +10,7 @@
 #include <sys/stat.h>
 #include <fcntl.h>
 #include <algorithm>
+#include <thread>    
 
 
 bool DoGet(int socket, std::string request)
@@ -153,12 +154,14 @@ int main(int argc, char** argv) {
         while ( 1 ) {
             ss = accept(masterSocket, 0, 0);
  //           std::cerr << "*_* accepted " << ss << std::endl;
-#pragma omp task
-            {
-                worker(ss);
-            }
+//#pragma omp task
+//            {
+std::thread t(worker, ss);
+t.detach();
+//                worker(ss);
+//            }
         }
-#pragma omp taskwait
+//#pragma omp taskwait
 
         return 0;
     }
